@@ -14,11 +14,11 @@
 typedef struct _query {
     int user;
     int action;
-    int seat;
+    int data;
 } query;
 
 typedef struct _user {
-    int user_state; // 0: not registered, 1: log-in, 2: log-out
+    int state; // 0: not registered, 1: log-in, 2: log-out
     int passcode;
 } user;
 
@@ -75,13 +75,56 @@ int main(int argc, char *argv[]) {
 void* thread_func(void *arg) {
     pthread_detach(pthread_self());
 
-    int connfd = *((int*)arg);
+    int connfd = *((int*)arg), user_id = -1;
     free(arg);
 
     while (1) {
         query q;
         recv(connfd, &q, sizeof(q), 0);
-        printf("%d %d %d\n", q.user, q.action, q.seat);
+        // printf("%d %d %d\n", q.user, q.action, q.data);
+
+        switch (q.action) {
+        case 1: // log-in
+            if (user_id != -1) { // client already log-in
+                int ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                break; 
+            }
+
+            pthread_mutex_lock(&mutex_user);
+            switch (user_info[q.user].state) {
+            case 0: // not registered
+                user_id = q.user;
+                user_info[q.user].state = 1;
+                user_info[q.user].passcode = q.data;
+                int ret = 1; send(connfd, &ret, sizeof(ret), 0);
+                break;
+
+            case 1: // log-in
+                int ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                break;
+
+            case 2: // log-out
+                if (user_info[q.user].passcode == q.data)
+                    user_id = q.user;
+                    user_info[q.user].state = 1;
+                    int ret = 1; send(connfd, &ret, sizeof(ret), 0);
+                else
+                    int ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                break;
+            }
+            pthread_mutex_unlock(&mutex_user);
+            break;
+
+        case 2: // reserve
+            break;
+        case 3: // check reservation
+            break;
+        case 4: // cancel reservation
+            break;
+        case 5: // log-out
+            break;
+        default:
+        }
     }
 
     close(connfd);

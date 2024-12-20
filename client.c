@@ -36,7 +36,7 @@ int main (int argc, char *argv[]) {
     while (1) {
 		query q;
 		scanf("%d %d %d", &q.user, &q.action, &q.seat);
-		printf("%d %d %d\n", q.user, q.action, q.seat);
+		// printf("%d %d %d\n", q.user, q.action, q.seat);
 		send(connection_socket, &q, sizeof(q), 0);
 
 		if (!(q.user | q.action | q.seat)) { // After send (0, 0, 0)
