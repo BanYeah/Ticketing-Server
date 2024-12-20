@@ -171,8 +171,20 @@ void* thread_func(void *arg) {
             break;
 
         case 5: // log-out
+            if (user_id == -1 ||     // before log-in
+                q.user != user_id) { // user mismatch
+                int ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                break; 
+            }
+
+            pthread_mutex_lock(&mutex_user);
+            user_id = -1;
+            user_info[user_id].state = 2;
+            pthread_mutex_unlock(&mutex_user);
+            int ret = 1; send(connfd, &ret, sizeof(ret), 0);
             break;
         default:
+            int ret = -1; send(connfd, &ret, sizeof(ret), 0);
         }
     }
 
