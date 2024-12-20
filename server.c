@@ -95,7 +95,8 @@ void* thread_func(void *arg) {
         case 1: // log-in
             if (user_id != -1 ||               // client already log-in
                 q.user < 0 || q.user > USER) { // out-of-range
-                ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                ret = -1;
+                send(connfd, &ret, sizeof(int), 0);
                 break; 
             }
 
@@ -105,21 +106,25 @@ void* thread_func(void *arg) {
                 user_id = q.user;
                 user_info[q.user].state = 1;
                 user_info[q.user].passcode = q.data;
-                ret = 1; send(connfd, &ret, sizeof(ret), 0);
+                ret = 1;
+                send(connfd, &ret, sizeof(int), 0);
                 break;
 
             case 1: // log-in
-                ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                ret = -1;
+                send(connfd, &ret, sizeof(int), 0);
                 break;
 
             case 2: // log-out
                 if (user_info[q.user].passcode == q.data) { // passcode correct!
                     user_id = q.user;
                     user_info[q.user].state = 1;
-                    ret = 1; send(connfd, &ret, sizeof(ret), 0);
+                    ret = 1;
+                    send(connfd, &ret, sizeof(int), 0);
+                } else {
+                    ret = -1;
+                    send(connfd, &ret, sizeof(int), 0);
                 }
-                else
-                    ret = -1; send(connfd, &ret, sizeof(ret), 0);
                 break;
             }
             pthread_mutex_unlock(&mutex_user);
@@ -129,35 +134,39 @@ void* thread_func(void *arg) {
             if (user_id == -1 ||               // client before log-in
                 q.user != user_id ||           // user mismatch
                 q.data < 0 || q.data > SEAT) { // out-of-range 
-                ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                ret = -1;
+                send(connfd, &ret, sizeof(int), 0);
                 break; 
             }
 
             pthread_mutex_lock(&mutex_seat);
             if (reserv[q.data] == -1) { // not reserved
                 reserv[q.data] = user_id;
-                ret = q.data; send(connfd, &ret, sizeof(ret), 0);
+                send(connfd, &q.data, sizeof(q.data), 0);
+            } else {
+                ret = -1;
+                send(connfd, &ret, sizeof(int), 0);
             }
-            else
-                ret = -1; send(connfd, &ret, sizeof(ret), 0);
             pthread_mutex_unlock(&mutex_seat);
             break;
 
         case 3: // check reservation
             if (user_id == -1 ||     // before log-in
                 q.user != user_id) { // user mismatch
-                ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                ret = -1;
+                send(connfd, &ret, sizeof(int), 0);
                 break; 
             }
 
             pthread_mutex_lock(&mutex_seat);
-            ret = -1;
-            for (int i = 0; i < SEAT; i++)
+            int reserv_seat = -1;
+            for (int i = 0; i < SEAT; i++) {
                 if (reserv[i] == user_id) {
-                    ret = i;
+                    reserv_seat = i;
                     break;
                 }
-            send(connfd, &ret, sizeof(ret), 0);
+            }
+            send(connfd, &reserv_seat, sizeof(int), 0);
             pthread_mutex_unlock(&mutex_seat);
             break;
 
@@ -165,32 +174,37 @@ void* thread_func(void *arg) {
             if (user_id == -1 ||               // before log-in
                 q.user != user_id ||           // user mismatch
                 q.data < 0 || q.data > SEAT) { // out-of-range 
-                ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                ret = -1;
+                send(connfd, &ret, sizeof(int), 0);
                 break; 
             }
 
             pthread_mutex_lock(&mutex_seat);
-            ret = -1;
-            for (int i = 0; i < SEAT; i++)
+            int cancel_seat = -1;
+            for (int i = 0; i < SEAT; i++) {
                 if (reserv[i] == user_id) {
-                   reserv[i] = -1; ret = i;
+                   reserv[i] = -1; 
+                   cancel_seat = i;
                    break;
                 }
-            send(connfd, &ret, sizeof(ret), 0);
+            }
+            send(connfd, &cancel_seat, sizeof(int), 0);
             pthread_mutex_unlock(&mutex_seat);
             break;
 
         case 5: // log-out
             if (user_id == -1 ||     // before log-in
                 q.user != user_id) { // user mismatch
-                ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                ret = -1;
+                send(connfd, &ret, sizeof(int), 0);
                 break; 
             }
 
             pthread_mutex_lock(&mutex_user);
-            user_id = -1;
             user_info[user_id].state = 2;
-            ret = 1; send(connfd, &ret, sizeof(ret), 0);
+            user_id = -1;
+            ret = 1;
+            send(connfd, &ret, sizeof(int), 0);
             pthread_mutex_unlock(&mutex_user);
             break;
         
@@ -203,7 +217,8 @@ void* thread_func(void *arg) {
                 break;
             }
         default:
-            ret = -1; send(connfd, &ret, sizeof(ret), 0);
+            ret = -1;
+            send(connfd, &ret, sizeof(int), 0);
         }
     }
 
