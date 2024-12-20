@@ -85,7 +85,8 @@ void* thread_func(void *arg) {
 
         switch (q.action) {
         case 1: // log-in
-            if (user_id != -1) { // client already log-in
+            if (user_id != -1 ||               // already log-in
+                q.user < 0 || q.user > USER) { // out-of-range
                 int ret = -1; send(connfd, &ret, sizeof(ret), 0);
                 break; 
             }
@@ -116,7 +117,23 @@ void* thread_func(void *arg) {
             break;
 
         case 2: // reserve
+            if (user_id == -1 ||               // before log-in
+                q.user != user_id ||           // user mismatch
+                q.data < 0 || q.data > SEAT) { // out-of-range 
+                int ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                break; 
+            }
+
+            pthread_mutex_lock(&mutex_seat);
+            if (reserv[q.data] == -1) {
+                reserv[q.data] = user_id;
+                int ret = 1; send(connfd, &ret, sizeof(ret), 0);
+            }
+            else
+                int ret = -1; send(connfd, &ret, sizeof(ret), 0);
+            pthread_mutex_unlock(&mutex_seat);
             break;
+
         case 3: // check reservation
             break;
         case 4: // cancel reservation
