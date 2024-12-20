@@ -127,7 +127,7 @@ void* thread_func(void *arg) {
             pthread_mutex_lock(&mutex_seat);
             if (reserv[q.data] == -1) {
                 reserv[q.data] = user_id;
-                int ret = 1; send(connfd, &ret, sizeof(ret), 0);
+                int ret = q.data; send(connfd, &ret, sizeof(ret), 0);
             }
             else
                 int ret = -1; send(connfd, &ret, sizeof(ret), 0);
@@ -135,6 +135,21 @@ void* thread_func(void *arg) {
             break;
 
         case 3: // check reservation
+            if (user_id == -1 ||     // before log-in
+                q.user != user_id) { // user mismatch
+                int ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                break; 
+            }
+
+            pthread_mutex_lock(&mutex_seat);
+            int ret = -1;
+            for (int i = 0; i < SEAT; i++)
+                if (reserv[i] == user_id) {
+                   ret = i
+                   break;
+                }
+            send(connfd, &ret, sizeof(ret), 0);
+            pthread_mutex_unlock(&mutex_seat);
             break;
         case 4: // cancel reservation
             break;
