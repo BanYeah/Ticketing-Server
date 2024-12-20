@@ -145,14 +145,31 @@ void* thread_func(void *arg) {
             int ret = -1;
             for (int i = 0; i < SEAT; i++)
                 if (reserv[i] == user_id) {
-                   ret = i
+                    ret = i;
+                    break;
+                }
+            send(connfd, &ret, sizeof(ret), 0);
+            pthread_mutex_unlock(&mutex_seat);
+            break;
+
+        case 4: // cancel reservation
+            if (user_id == -1 ||     // before log-in
+                q.user != user_id) { // user mismatch
+                int ret = -1; send(connfd, &ret, sizeof(ret), 0);
+                break; 
+            }
+
+            pthread_mutex_lock(&mutex_seat);
+            int ret = -1;
+            for (int i = 0; i < SEAT; i++)
+                if (reserv[i] == user_id) {
+                   reserv[i] = -1; ret = i;
                    break;
                 }
             send(connfd, &ret, sizeof(ret), 0);
             pthread_mutex_unlock(&mutex_seat);
             break;
-        case 4: // cancel reservation
-            break;
+
         case 5: // log-out
             break;
         default:
