@@ -46,9 +46,8 @@ int main (int argc, char *argv[]) {
 			for(int i = 0; i <= 255; i++) printf("%d ", arr[i]);
 			printf("\n");
 			break;
-		}
-		else {
-			int ret
+		} else {
+			int ret;
 			recv(connection_socket, &ret, sizeof(ret), 0);
 			printf("%d\n", ret);
 		}
